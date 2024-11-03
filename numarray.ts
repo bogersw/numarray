@@ -28,7 +28,7 @@ interface Mathematical {
 
 interface Random {
     choice(): number;
-    sample(size: number, replace: boolean): number[];
+    sample(size: number, replace: boolean): NumArray;
     shuffle(): NumArray;
 }
 
@@ -51,9 +51,9 @@ export class NumArray implements Linear, Mathematical, Random, Statistical {
      * a regular array with some additional methods which regularly come up and which are
      * conveniently collected in this class. Inspired by Python's NumPy.
      *
-     * @param data  The data to initialize the array with. Can be a collection of numbers
-     *              or an iterable object (array, set, ...). Can also be left empty, in which
-     *              case an empty array is created.
+     * @param numbers   The data to initialize the array with. Can be a collection of numbers
+     *                  or an iterable object (array, set, ...). Can also be left empty, in which
+     *                  case an empty NumArray is created.
      */
     constructor(...numbers: number[] | [Iterable<number>]) {
         // Input: separate elements or array / set / ...?
@@ -215,10 +215,10 @@ export class NumArray implements Linear, Mathematical, Random, Statistical {
     // ========================================================================
 
     /**
-     * Computes the dot product of the current array and the given array.
+     * Computes the dot product of the current NumArray and the given NumArray.
      *
-     * @param arr   The numeric array to compute the dot product with.
-     * @returns     The dot product of this vector and the given vector.
+     * @param arr   The NumArray to compute the dot product with.
+     * @returns     The dot product of this NumArray and the given NumArray.
      */
     dot(arr: NumArray): number {
         if (this.data.length != arr.length) {
@@ -232,10 +232,10 @@ export class NumArray implements Linear, Mathematical, Random, Statistical {
     // ========================================================================
 
     /**
-     * Adds the given array to this array (element-wise addition).
+     * Adds the given number or NumArray to this NumArray (element-wise addition).
      *
-     * @param arr The array to add to this array (element-wise).
-     * @returns   A new array that is the sum of array vector and the given array.
+     * @param value The array to add to this array (element-wise).
+     * @returns     A new array that is the sum of this array and the given array.
      */
     add(value: number | NumArray): NumArray {
         // Scalar addition: value is a number
@@ -244,18 +244,29 @@ export class NumArray implements Linear, Mathematical, Random, Statistical {
         }
         // Array addition: value is an array
         if (this.data.length != value.length) {
-            throw new Error("Array lengths must be equal for addtion.");
+            throw new Error("Array lengths must be equal for addition.");
         }
         return new NumArray(this.data.map((el, index) => el + value.element(index)));
     }
 
+    /**
+     * Rounds all elements in the array to the nearest, larger integer.
+     *
+     * @returns     A new array with all elements rounded up.
+     */
     ceil(): NumArray {
-        // Transform entries to the ceil of their value
         return new NumArray(this.data.map((el) => Math.ceil(el)));
     }
 
+    /**
+     * Computes the cosine of all elements in the array (element-wise) and returns a new array.
+     *
+     * @param radians   If true, then the array is assumed to contain elements in radians and
+     *                  the cosine is computed in radians. Otherwise, the array is assumed to
+     *                  contain elements in degrees and the cosine is computed in degrees.
+     * @returns         A new array where all elements are the cosine of their original value.
+     */
     cos(radians: boolean): NumArray {
-        // Transform entries to the cosine of their value
         if (radians) return new NumArray(this.data.map((el) => Math.cos(el)));
         return new NumArray(this.data.map((el) => Math.cos((Math.PI / 180) * el)));
     }
@@ -297,8 +308,12 @@ export class NumArray implements Linear, Mathematical, Random, Statistical {
         return new NumArray(this.data.map((el) => Math.pow(10, el)));
     }
 
+    /**
+     * Rounds all elements in the array to the nearest, smaller integer.
+     *
+     * @returns     A new array with all elements rounded down.
+     */
     floor(): NumArray {
-        // Transform entries to the floor of their value
         return new NumArray(this.data.map((el) => Math.floor(el)));
     }
 
@@ -355,8 +370,15 @@ export class NumArray implements Linear, Mathematical, Random, Statistical {
         return new NumArray(this.data.map((el) => Number(el.toFixed(decimals))));
     }
 
+    /**
+     * Computes the sine of all elements in the array (element-wise) and returns a new array.
+     *
+     * @param radians   If true, then the array is assumed to contain elements in radians and
+     *                  the sine is computed in radians. Otherwise, the array is assumed to
+     *                  contain elements in degrees and the sine is computed in degrees.
+     * @returns         A new array where all elements are the sine of their original value.
+     */
     sin(radians: boolean = true): NumArray {
-        // Transform entries to the sine of their value
         if (radians) return new NumArray(this.data.map((el) => Math.sin(el)));
         return new NumArray(this.data.map((el) => Math.sin((Math.PI / 180) * el)));
     }
@@ -378,8 +400,15 @@ export class NumArray implements Linear, Mathematical, Random, Statistical {
         return this.data.reduce((acc, current) => acc + current, 0);
     }
 
+    /**
+     * Computes the tangent of all elements in the array (element-wise) and returns a new array.
+     *
+     * @param radians   If true, then the array is assumed to contain elements in radians and
+     *                  the tangent is computed in radians. Otherwise, the array is assumed to
+     *                  contain elements in degrees and the tangent is computed in degrees.
+     * @returns         A new array where all elements are the tangent of their original value.
+     */
     tan(radians: boolean = true): NumArray {
-        // Transform entries to the tangent of their value
         if (radians) return new NumArray(this.data.map((el) => Math.tan(el)));
         return new NumArray(this.data.map((el) => Math.tan((Math.PI / 180) * el)));
     }
@@ -388,22 +417,27 @@ export class NumArray implements Linear, Mathematical, Random, Statistical {
     // Random functions
     // ========================================================================
 
+    /**
+     * Picks a random value from the array and returns it.
+     *
+     * @returns A random value from the array.
+     */
     choice(): number {
-        // Return a random choice from the vectors entries
+        if (this.data.length === 0) throw new Error("Array is empty: no value can be chosen.");
         const index = Math.floor(Math.random() * this.data.length);
         return this.data[index];
     }
 
     /**
-     * Returns a sample of `size` values. Sampling can be done with replacement
-     * or without replacement.
+     * Returns a sample of values from the array. Sampling can be done with
+     * replacement or without replacement.
      *
-     * @param size - The number of values to sample.
-     * @param replace - Sample with / without replacement. Dafault: with replacement.
-     * @returns An array containing the sampled values.
-     *
+     * @param size      The number of values to sample.
+     * @param replace   Sample with / without replacement. Default: with replacement.
+     * @returns         A new array containing the sampled values.
      */
-    sample(size: number, replace: boolean = true): number[] {
+    sample(size: number, replace: boolean = true): NumArray {
+        if (size < 0 || size % 1 !== 0) throw new Error("Size must be a positive integer.");
         const result: number[] = [];
         if (replace) {
             // Sample with replacement
@@ -418,19 +452,26 @@ export class NumArray implements Linear, Mathematical, Random, Statistical {
             const sampleData: number[] = [...this.data];
             let numSamples = 0;
             for (let i = 1; i <= size; i++) {
-                const index = Math.floor(Math.random() * (size - numSamples));
+                // const index = Math.floor(Math.random() * (sampleData.length - numSamples));
+                const index = Math.floor(Math.random() * sampleData.length);
                 result.push(sampleData[index]);
                 sampleData.splice(index, 1);
                 numSamples += 1;
             }
         }
-        return result;
+        return new NumArray(result);
     }
 
+    /**
+     * Shuffles the values in the array and returns a new, shuffled array.
+     *
+     * @returns A new, shuffled array.
+     */
     shuffle(): NumArray {
         const shuffleData: number[] = [...this.data];
+        if (shuffleData.length === 1) return new NumArray(shuffleData);
         for (let i = 0; i < this.data.length; i++) {
-            const swapIndex = NumArray.randomInt(1, 0, this.data.length - 1).element(0);
+            const swapIndex = NumArray.randomInt(0, this.data.length - 1, 1).element(0);
             [shuffleData[i], shuffleData[swapIndex]] = [shuffleData[swapIndex], shuffleData[i]];
         }
         return new NumArray(shuffleData);
@@ -515,14 +556,19 @@ export class NumArray implements Linear, Mathematical, Random, Statistical {
     }
 
     element(index: number): number {
-        if (index < 0 || index >= this.data.length) {
+        if (index < 0 || index >= this.data.length || index % 1 !== 0) {
             throw new Error("Index out of bounds.");
         }
         return this.data[index];
     }
 
     get length(): number {
-        // Length of vector
+        // Return the number of elements
         return this.data.length;
+    }
+
+    push(value: number): void {
+        // Add an element to the end of the array
+        this.data.push(value);
     }
 }
